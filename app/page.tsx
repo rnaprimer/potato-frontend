@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function Home() {
   const [pin, setPin] = useState('')
@@ -81,12 +82,12 @@ export default function Home() {
           </div>
 
           <div className="absolute left-[140px]">
-            <button className="relative group outline-none w-[240px]">
+            <Link href="/buy" className="relative group outline-none w-[240px] block cursor-pointer">
               <div className="absolute inset-0 rounded-full border-[1.5px] border-black bg-[#e2bf46] translate-y-[5px] group-active:translate-y-[2px] transition-transform"></div>
               <div className="relative w-full h-[54px] flex items-center justify-center rounded-full border-[1.5px] border-black bg-[#fce373] text-black font-medium group-active:translate-y-[3px] transition-transform text-[16px]">
                 Get your own Potato
               </div>
-            </button>
+            </Link>
           </div>
 
         </div>
@@ -150,12 +151,12 @@ export default function Home() {
             </div>
           </button>
 
-          <button className="relative group outline-none w-full mt-2">
+          <Link href="/buy" className="relative group outline-none w-full mt-2 block cursor-pointer">
             <div className="absolute inset-0 rounded-full border-[1.5px] border-black bg-[#e2bf46] translate-y-[4px] group-active:translate-y-[2px] transition-transform"></div>
             <div className="relative w-full h-[54px] flex items-center justify-center rounded-full border-[1.5px] border-black bg-[#fce373] text-black font-medium group-active:translate-y-[3px] transition-transform text-[16px]">
               Get your own Potato
             </div>
-          </button>
+          </Link>
 
         </div>
       </div>
