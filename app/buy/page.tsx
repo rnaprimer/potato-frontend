@@ -1,12 +1,53 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import Script from 'next/script'
+import { createOrder, verifyPayment } from '@/services/api'
 
 export default function BuyPage() {
+  const [loading, setLoading] = useState(false)
+
+  const handlePayment = async () => {
+    setLoading(true)
+    try {
+      const order = await createOrder();
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_Sc946dIKfIiSAX",
+        amount: order.amount,
+        currency: "INR",
+        name: "Potato",
+        description: "Premium Potato",
+        order_id: order.id,
+
+        handler: async function (response: any) {
+          try {
+            await verifyPayment(response);
+            alert("Payment Successful 🚀");
+          } catch (err) {
+            alert("Payment verification failed");
+          }
+        },
+
+        theme: { color: "#111" }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed");
+    } finally {
+      setLoading(false)
+    }
+  };
+
   return (
     <main className="w-full min-h-[100dvh] bg-[#fdfdfd] flex flex-col items-center justify-center p-4 relative overflow-x-hidden">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       
       {/* Back Button */}
       <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-black font-bold hover:opacity-70 transition-opacity z-50">
@@ -69,13 +110,13 @@ export default function BuyPage() {
 
             {/* Payment Button Placeholder */}
             <div className="mt-auto pt-10">
-              <button type="button" className="relative group w-full block outline-none cursor-pointer">
-                <div className="absolute inset-0 rounded-2xl border-[3px] border-black bg-black translate-y-[8px] group-active:translate-y-[2px] transition-transform"></div>
-                <div className="relative w-full h-[64px] flex items-center justify-center rounded-2xl border-[3px] border-black bg-[#cfb5e7] text-black font-black text-xl group-active:translate-y-[6px] transition-transform uppercase tracking-wider">
-                  Pay Now
+              <button onClick={handlePayment} disabled={loading} type="button" className="relative group w-full block outline-none cursor-pointer">
+                <div className={`absolute inset-0 rounded-2xl border-[3px] border-black bg-black translate-y-[8px] ${loading ? '' : 'group-active:translate-y-[2px]'} transition-transform`}></div>
+                <div className={`relative w-full h-[64px] flex items-center justify-center rounded-2xl border-[3px] border-black bg-[#cfb5e7] text-black font-black text-xl ${loading ? '' : 'group-active:translate-y-[6px]'} transition-transform uppercase tracking-wider`}>
+                  {loading ? 'Processing...' : 'Pay Now'}
                 </div>
               </button>
-              <p className="text-center text-xs text-black/50 mt-6 font-bold uppercase tracking-widest">* Razorpay integration pending *</p>
+              <p className="text-center text-xs text-black/50 mt-6 font-bold uppercase tracking-widest">* Razorpay Integration Connected *</p>
             </div>
 
           </form>

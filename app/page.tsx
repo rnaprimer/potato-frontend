@@ -4,16 +4,27 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [pin, setPin] = useState('')
   const [mounted, setMounted] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   if (!mounted) return null;
+
+  const handleAccess = () => {
+    if (pin.includes("-")) {
+      const [pinId, rawPin] = pin.split("-");
+      router.push(`/manage/${pinId}/${rawPin}`);
+    } else {
+      alert("Invalid PIN. It should look like abcd-123456");
+    }
+  };
 
   return (
     <main className="w-full h-[100dvh] bg-white relative flex flex-col items-center justify-center overflow-hidden">
@@ -73,7 +84,7 @@ export default function Home() {
               />
             </div>
 
-            <button className="relative group outline-none w-[120px]">
+            <button onClick={handleAccess} className="relative group outline-none w-[120px]">
               <div className="absolute inset-0 rounded-full border-[1.5px] border-black bg-[#cfb5e7] translate-y-[5px] group-active:translate-y-[2px] transition-transform"></div>
               <div className="relative w-full h-[54px] flex items-center justify-center rounded-full border-[1.5px] border-black bg-[#f2ddfa] text-black font-medium group-active:translate-y-[3px] transition-transform text-[16px]">
                 Unlock
@@ -144,7 +155,7 @@ export default function Home() {
             />
           </div>
 
-          <button className="relative group outline-none w-full">
+          <button onClick={handleAccess} className="relative group outline-none w-full">
             <div className="absolute inset-0 rounded-full border-[1.5px] border-black bg-[#cfb5e7] translate-y-[4px] group-active:translate-y-[2px] transition-transform"></div>
             <div className="relative w-full h-[54px] flex items-center justify-center rounded-full border-[1.5px] border-black bg-[#f2ddfa] text-black font-medium group-active:translate-y-[3px] transition-transform text-[16px]">
               Unlock
