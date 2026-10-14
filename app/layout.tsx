@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const montserrat = Montserrat({
@@ -40,7 +39,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${montserrat.className} antialiased`} suppressHydrationWarning>
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )

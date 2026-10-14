@@ -123,3 +123,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes bounce-potato {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-35px); }
+  }
+  @keyframes pulse-shadow {
+    0%, 100% { transform: scale(1); opacity: 0.35; }
+    50% { transform: scale(0.75); opacity: 0.15; }
+  }
+  .animate-bounce-potato {
+    animation: bounce-potato 4s ease-in-out infinite;
+    will-change: transform;
+  }
+  .animate-pulse-shadow {
+    animation: pulse-shadow 4s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+}
+
+/* Custom navigation link hover underline animation */
+.nav-link-animated {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.nav-link-animated::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: #000000;
+  transition: width 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+}
+
+.nav-link-animated:hover::after,
+.nav-link-animated:focus-visible::after {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link-animated::after {
+    transition: none;
+  }
+}

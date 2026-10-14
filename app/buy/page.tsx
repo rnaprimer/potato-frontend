@@ -69,6 +69,7 @@ export default function BuyPage() {
               src="/potato.png" 
               alt="Physical Potato" 
               fill 
+              sizes="(max-width: 768px) 192px, 256px"
               priority
               className="object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500" 
             />
