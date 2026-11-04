@@ -48,33 +48,33 @@ export default function BuyPage() {
   return (
     <main className="w-full min-h-[100dvh] bg-[#fdfdfd] flex flex-col items-center justify-center p-4 relative overflow-x-hidden">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-      
+
       {/* Back Button */}
       <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-black font-bold hover:opacity-70 transition-opacity z-50">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
+          <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
         Back
       </Link>
 
       <div className="w-full max-w-4xl bg-white border-[3px] border-black rounded-[32px] p-6 md:p-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col md:flex-row gap-10 mt-16 md:mt-0 relative z-10">
-        
+
         {/* Left Side - Product Showcase */}
         <div className="flex-1 flex flex-col items-center justify-center bg-[#fce373] border-[3px] border-black rounded-[24px] p-8 relative overflow-hidden shadow-inner">
           <h2 className="text-2xl font-black mb-2 tracking-widest">THE POTATO.</h2>
           <p className="text-sm font-bold opacity-70 mb-8">100% Genuine Physical Potato</p>
-          
+
           <div className="relative w-48 h-48 md:w-64 md:h-64 mb-6">
-            <Image 
-              src="/potato.png" 
-              alt="Physical Potato" 
-              fill 
+            <Image
+              src="/potato.png"
+              alt="Physical Potato"
+              fill
               sizes="(max-width: 768px) 192px, 256px"
               priority
-              className="object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500" 
+              className="object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
             />
           </div>
-          
+
           <div className="mt-auto text-center z-10">
             <p className="text-2xl font-black bg-white px-6 py-2 border-[3px] border-black rounded-full inline-block transform -rotate-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               $99.00

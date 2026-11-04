@@ -14,7 +14,7 @@ export function Navbar() {
       {/* Top Right: Horizontal Navigation Links */}
       <div className="flex items-center gap-7 sm:gap-8 md:gap-10">
         <Link
-          href="#explore"
+          href="/explore"
           className="nav-link-animated text-black font-medium text-sm md:text-base tracking-normal transition-colors"
         >
           Explore

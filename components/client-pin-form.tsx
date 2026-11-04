@@ -64,7 +64,7 @@ export function ClientPinForm() {
       {/* 
         ======== MOBILE VIEW CONTROLS ======== 
       */}
-      <div className="flex md:hidden flex-col w-full max-w-[280px] gap-4 mt-0 z-30 px-4 relative">
+      <div className="flex md:hidden flex-col w-full max-w-[280px] gap-4 mt-0 -top-12 z-30 px-4 relative">
         
         <div className="relative group w-full">
           <div className="absolute inset-0 rounded-full border-[1.5px] border-black bg-[#cfb5e7] translate-y-[3px]"></div>
