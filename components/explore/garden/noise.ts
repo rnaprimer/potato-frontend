@@ -43,6 +43,11 @@ export function fbm(x: number, y: number) {
   )
 }
 
+// Two broad octaves only: gentle, rounded landforms with no small bumps.
+function fbmSmooth(x: number, y: number) {
+  return (0.7 * noise(x, y) + 0.3 * noise(x * 1.9 + 17, y * 1.9 + 17))
+}
+
 const smoothstep = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
@@ -68,8 +73,9 @@ export const TERRAIN = {
   // A soft swell of earth right under her seat, so the ground visibly meets her
   // hips (her photo stands at z=0; her seat looks onto ground ~1 unit behind it).
   seat: { x: 0, z: -1.0, radiusX: 0.85, radiusZ: 0.5, height: 0.26 },
-  // Small undulations everywhere except her plateau.
+  // Small undulations near her (they fade out by `detailFade` so the distance stays smooth).
   detail: 0.22,
+  detailFade: [10, 24],
   // Rolling fields in the middle distance.
   rolling: { amount: 4.0, scale: 0.07, from: 9, to: 35 },
   // Land rising on both sides, like a valley she sits in.
@@ -86,15 +92,16 @@ export function terrainHeight(x: number, z: number) {
   const r = Math.hypot((x - m.x) / m.radiusX, (z - m.z) / m.radiusZ)
   const flank = smoothstep(1.0, 2.2, r)
   let h = m.height * (1 - smoothstep(m.plateau, m.foot, r))
-  h += (fbm(x * 0.8, z * 0.8) - 0.5) * m.lumps * flank
-  h += ((fbm(x * 0.9, z * 0.9) - 0.5) * T.detail + (noise(x * 4, z * 4) - 0.5) * 0.03) * smoothstep(0.9, 2.0, r)
+  const d = Math.hypot(x, z)
+  const near = 1 - smoothstep(T.detailFade[0], T.detailFade[1], d)
+  h += (fbm(x * 0.8, z * 0.8) - 0.5) * m.lumps * flank * near
+  h += ((fbm(x * 0.9, z * 0.9) - 0.5) * T.detail + (noise(x * 4, z * 4) - 0.5) * 0.03) * smoothstep(0.9, 2.0, r) * near
   const sx = (x - T.seat.x) / T.seat.radiusX
   const sz = (z - T.seat.z) / T.seat.radiusZ
   h += T.seat.height * Math.exp(-(sx * sx + sz * sz) * 2)
-  const d = Math.hypot(x, z)
-  h += (fbm(x * T.rolling.scale + 50, z * T.rolling.scale + 50) - 0.45) * T.rolling.amount * smoothstep(T.rolling.from, T.rolling.to, d)
+  h += (fbmSmooth(x * T.rolling.scale + 50, z * T.rolling.scale + 50) - 0.45) * T.rolling.amount * smoothstep(T.rolling.from, T.rolling.to, d)
   h += Math.pow(smoothstep(T.sides.from, T.sides.to, Math.abs(x)), 1.5) * T.sides.amount
-  h += smoothstep(T.ridges.from, T.ridges.to, -z) * (fbm(x * T.ridges.scale + 9, z * T.ridges.scale + 9) * T.ridges.amount - 4)
+  h += smoothstep(T.ridges.from, T.ridges.to, -z) * (fbmSmooth(x * T.ridges.scale + 9, z * T.ridges.scale + 9) * T.ridges.amount - 4)
   return h
 }
 
@@ -108,18 +115,20 @@ float fbm(vec2 p) {
   return (0.5 * vnoise(p) + 0.25 * vnoise(p * 2.03 + 17.0) + 0.125 * vnoise(p * 4.01 + 31.0)
     + 0.0625 * vnoise(p * 8.1 + 7.0)) / 0.9375;
 }
+float fbmSmooth(vec2 p) { return 0.7 * vnoise(p) + 0.3 * vnoise(p * 1.9 + 17.0); }
 float terrainHeight(vec2 p) {
   float r = length((p - vec2(${n(T.mound.x)}, ${n(T.mound.z)})) / vec2(${n(T.mound.radiusX)}, ${n(T.mound.radiusZ)}));
   float flank = smoothstep(1.0, 2.2, r);
   float h = ${n(T.mound.height)} * (1.0 - smoothstep(${n(T.mound.plateau)}, ${n(T.mound.foot)}, r));
-  h += (fbm(p * 0.8) - 0.5) * ${n(T.mound.lumps)} * flank;
-  h += ((fbm(p * 0.9) - 0.5) * ${n(T.detail)} + (vnoise(p * 4.0) - 0.5) * 0.03) * smoothstep(0.9, 2.0, r);
+  float d = length(p);
+  float near = 1.0 - smoothstep(${n(T.detailFade[0])}, ${n(T.detailFade[1])}, d);
+  h += (fbm(p * 0.8) - 0.5) * ${n(T.mound.lumps)} * flank * near;
+  h += ((fbm(p * 0.9) - 0.5) * ${n(T.detail)} + (vnoise(p * 4.0) - 0.5) * 0.03) * smoothstep(0.9, 2.0, r) * near;
   vec2 sp = (p - vec2(${n(T.seat.x)}, ${n(T.seat.z)})) / vec2(${n(T.seat.radiusX)}, ${n(T.seat.radiusZ)});
   h += ${n(T.seat.height)} * exp(-dot(sp, sp) * 2.0);
-  float d = length(p);
-  h += (fbm(p * ${n(T.rolling.scale)} + 50.0) - 0.45) * ${n(T.rolling.amount)} * smoothstep(${n(T.rolling.from)}, ${n(T.rolling.to)}, d);
+  h += (fbmSmooth(p * ${n(T.rolling.scale)} + 50.0) - 0.45) * ${n(T.rolling.amount)} * smoothstep(${n(T.rolling.from)}, ${n(T.rolling.to)}, d);
   h += pow(smoothstep(${n(T.sides.from)}, ${n(T.sides.to)}, abs(p.x)), 1.5) * ${n(T.sides.amount)};
-  h += smoothstep(${n(T.ridges.from)}, ${n(T.ridges.to)}, -p.y) * (fbm(p * ${n(T.ridges.scale)} + 9.0) * ${n(T.ridges.amount)} - 4.0);
+  h += smoothstep(${n(T.ridges.from)}, ${n(T.ridges.to)}, -p.y) * (fbmSmooth(p * ${n(T.ridges.scale)} + 9.0) * ${n(T.ridges.amount)} - 4.0);
   return h;
 }
 // Distance from the woman, warped so the green front spreads in organic lobes.

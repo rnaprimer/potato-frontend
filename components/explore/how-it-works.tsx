@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { PotatoJourney } from './potato-journey'
+import { SiteFooter } from '@/components/site-footer'
 
 function Cursor({ className }: { className?: string }) {
   return (
@@ -186,10 +187,7 @@ export function HowItWorks() {
             className="hidden group-data-[journey=on]/how:block absolute z-[6] left-[57.92%] top-[28.01%] w-[21.67%] h-auto"
           />
         </div>
-        <footer className="relative z-[7] flex items-center gap-6 bg-black px-5 md:px-8 py-3 text-[12px] font-semibold text-white">
-          <span>Terms &amp; Support</span>
-          <span>Privacy Policy</span>
-        </footer>
+        <SiteFooter className="z-[7]" />
       </div>
       <PotatoJourney />
     </section>

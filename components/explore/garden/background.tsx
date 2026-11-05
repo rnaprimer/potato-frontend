@@ -60,8 +60,10 @@ uniform float uFront;
 varying vec3 vWorld;
 varying vec3 vN;
 float layerH(vec2 p) {
-  float soft = fbm(p * uScale + 40.0);
-  float ridge = 1.0 - abs(2.0 * fbm(p * uScale * 0.6 + 90.0) - 1.0);
+  // two broad octaves only, so the far hills read as smooth rounded shapes
+  float soft = 0.7 * vnoise(p * uScale + 40.0) + 0.3 * vnoise(p * uScale * 1.9 + 57.0);
+  float ridge = 1.0 - abs(2.0 * (0.75 * vnoise(p * uScale * 0.6 + 90.0) + 0.25 * vnoise(p * uScale * 1.1 + 13.0)) - 1.0);
+  ridge = smoothstep(0.0, 1.0, ridge);
   // rise from the front edge so the strip never shows a cliff
   float rise = smoothstep(uFront, uFront - 60.0, p.y);
   return uBase + mix(soft, ridge * ridge, uRidgeMix) * uAmp * rise;
@@ -94,7 +96,7 @@ void main() {
   vec2 p = vWorld.xz;
   // the green front reaches these far layers only near the end of the scroll
   float green = smoothstep(120.0, 230.0, uRadius) * smoothstep(0.3, 0.6, fbm(p * 0.02 + 7.0) + 0.25);
-  vec3 c = mix(uDry, uGreen, green) * (0.88 + fbm(p * 0.05) * 0.24);
+  vec3 c = mix(uDry, uGreen, green) * (0.94 + vnoise(p * 0.02) * 0.12);
   vec3 n = normalize(vN);
   vec3 L = normalize(vec3(-0.45, 0.75, 0.35));
   vec3 lit = c * (uSky * (0.55 + 0.25 * n.y) + uSun * max(dot(n, L), 0.0) * 0.6);

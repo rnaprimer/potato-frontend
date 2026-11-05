@@ -129,7 +129,7 @@ vec3 soil(vec2 p, float slope, float detail, out float h) {
   float crumb = vnoise(p * 28.0);
   float grain = vnoise(p * 75.0);
   vec3 c = mix(${glslColor(COLORS.dryEarth)}, ${glslColor(COLORS.dryLight)}, smoothstep(0.35, 0.75, broad));
-  c = mix(c, ${glslColor(COLORS.dryDark)}, smoothstep(0.55, 0.85, clod) * 0.55);
+  c = mix(c, ${glslColor(COLORS.dryDark)}, smoothstep(0.55, 0.85, clod) * 0.55 * detail);
   // damp, richer earth in the low hollows
   float hollow = smoothstep(0.45, 0.2, fbm(p * 1.3 + 21.0));
   c = mix(c, c * vec3(0.72, 0.66, 0.6), hollow * 0.6);
@@ -142,7 +142,7 @@ vec3 soil(vec2 p, float slope, float detail, out float h) {
   c *= 1.0 - ring * 0.3;
 
   c = mix(c, ${glslColor(COLORS.dryDark)}, slope * 0.35); // steeper banks show darker earth
-  c *= 0.84 + crumb * 0.16 + grain * 0.1;
+  c *= mix(0.92, 0.84 + crumb * 0.16 + grain * 0.1, detail);
 
   h = clod * 0.5 + crumb * 0.22 + grain * 0.08 + stone * 0.4;
   return c;
@@ -155,7 +155,7 @@ vec3 turf(vec2 p, float slope, out float h) {
   vec3 c = mix(${glslColor(COLORS.turfYoung)}, ${glslColor(COLORS.turfDeep)}, smoothstep(0.3, 0.8, broad) * (0.45 + 0.55 * uLush));
   c = mix(c, c * 0.8, slope * 0.4);
   h = fine * 0.4 + blade * 0.3;
-  return c * (0.8 + fine * 0.25 + blade * 0.1);
+  return c * mix(0.92, 0.8 + fine * 0.25 + blade * 0.1, smoothstep(40.0, 10.0, length(vWorld - cameraPosition)));
 }
 
 void main() {
@@ -181,9 +181,6 @@ void main() {
   float h = mix(hSoil, hTurf, green);
   vec3 n = bumpNormal(vWorld, n0, h * 0.06 * detail, 1.0);
 
-  // faint terrace lines on the middle-distance slopes
-  float terrace = smoothstep(0.88, 1.0, fract(vHeight * 2.2)) * smoothstep(14.0, 40.0, dist) * (1.0 - smoothstep(90.0, 160.0, dist));
-  base *= 1.0 - terrace * 0.18;
 
   vec3 L = normalize(vec3(-0.45, 0.75, 0.35));
   float diff = max(dot(n, L), 0.0);

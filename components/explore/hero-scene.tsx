@@ -14,15 +14,21 @@ const HERO_BOX = {
 } as CSSProperties
 
 /*
- * SKY & CLOUDS: tweak here. Photographic clouds; `width` is in vw, `depth`
- * scales how much each drifts with scroll (bigger = nearer = moves more).
+ * SKY & CLOUDS: tweak here. Six clouds spread over the sky in two staggered rows.
+ * `left`/`top` are % of the cloud band (the top 60% of the screen, 120% wide);
+ * `width` is the larger of `width` vw and 0.9×`width` vh, so clouds stay a sensible
+ * size on tall phones as well as wide screens. `depth` scales their scroll parallax.
  */
 const SKY = 'linear-gradient(180deg, #1f6fc4 0%, #3b8fdb 22%, #6fb2e8 42%, #a9d2f1 58%, #d6ebf8 72%)'
 const CLOUDS = [
-  { src: '/explore/cloud-2.webp', w: 1200, h: 443, left: '2%', top: '5%', width: 30, o: 0.95, depth: 1 },
-  { src: '/explore/cloud-4.webp', w: 1200, h: 745, left: '62%', top: '-2%', width: 26, o: 0.92, depth: 0.8 },
-  { src: '/explore/cloud-3.webp', w: 1200, h: 419, left: '80%', top: '26%', width: 16, o: 0.8, depth: 0.55 },
-  { src: '/explore/cloud-1.webp', w: 1200, h: 562, left: '30%', top: '24%', width: 14, o: 0.6, depth: 0.45 },
+  // upper row
+  { src: '/explore/cloud-2.webp', w: 1200, h: 443, left: '3%', top: '4%', width: 26, o: 0.95, depth: 1, flip: false },
+  { src: '/explore/cloud-4.webp', w: 1200, h: 745, left: '38%', top: '0%', width: 22, o: 0.9, depth: 0.85, flip: false },
+  { src: '/explore/cloud-3.webp', w: 1200, h: 419, left: '72%', top: '8%', width: 20, o: 0.9, depth: 0.75, flip: true },
+  // lower row, offset between the clouds above
+  { src: '/explore/cloud-1.webp', w: 1200, h: 562, left: '10%', top: '44%', width: 17, o: 0.75, depth: 0.55, flip: false },
+  { src: '/explore/cloud-3.webp', w: 1200, h: 419, left: '44%', top: '52%', width: 15, o: 0.7, depth: 0.45, flip: false },
+  { src: '/explore/cloud-2.webp', w: 1200, h: 443, left: '74%', top: '38%', width: 16, o: 0.75, depth: 0.5, flip: true },
 ]
 
 // The static hero: sky, clouds, embroidered wings and the seated woman.
@@ -40,8 +46,13 @@ export function HeroScene({ ground }: { ground?: ReactNode }) {
               alt=""
               width={c.w}
               height={c.h}
-              sizes={`${c.width}vw`}
-              style={{ width: `${c.width}vw`, height: 'auto', opacity: c.o }}
+              sizes={`${c.width * 2}vw`}
+              style={{
+                width: `max(${c.width}vw, ${c.width * 0.9}vh)`,
+                height: 'auto',
+                opacity: c.o,
+                transform: c.flip ? 'scaleX(-1)' : undefined,
+              }}
             />
           </div>
         ))}
