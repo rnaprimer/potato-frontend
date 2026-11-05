@@ -88,9 +88,9 @@ export function HowItWorks() {
           </div>
           <Image
             src="/explore/step-glasses.webp"
-            alt="A grinning grandfather in a green silk shirt and gold chains adjusts his yellow sunglasses"
+            alt="A grinning grandfather in a green elephant-print silk shirt and gold chains adjusts his yellow sunglasses"
             width={1400}
-            height={745}
+            height={700}
             sizes="(max-width: 768px) 100vw, 900px"
             className="mt-8 w-full h-auto md:mt-0 md:absolute md:left-[1%] md:bottom-0 md:w-[76%]"
           />
@@ -124,9 +124,9 @@ export function HowItWorks() {
           />
           <Image
             src="/explore/woman-smile.webp"
-            alt="A grandmother in a cream and gold saree and sunglasses smiles, showing a gold tooth"
+            alt="A grandmother in jasmine flowers, sunglasses and a cream and gold saree grins to show her gold teeth"
             width={1000}
-            height={1011}
+            height={921}
             sizes="(max-width: 768px) 48vw, 360px"
             className="absolute right-0 bottom-0 w-[48%] md:right-[10%] md:w-[31%] h-auto"
           />
