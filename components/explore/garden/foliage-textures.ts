@@ -11,18 +11,20 @@ function canvas(w: number, h: number) {
   return [c, c.getContext('2d')!] as const
 }
 
-// The outline of a potato leaflet: ovate, pointed tip, slightly wavy margin.
+// The outline of a potato leaflet: ovate with a rounded, slightly lopsided base, widest
+// just below the middle, drawn out into a fine pointed tip, with a gently wavy margin.
 function leafletPath(ctx: CanvasRenderingContext2D, w: number, h: number, r: () => number) {
   const cx = w / 2
-  const steps = 60
+  const steps = 90
   const pts: [number, number][] = []
   for (const side of [-1, 1]) {
+    const lop = side < 0 ? 1 : 0.93
     for (let i = 0; i <= steps; i++) {
       const t = side < 0 ? i / steps : 1 - i / steps
-      // oval: narrow petiole, rounded base, widest a little below the middle, pointed tip
-      const half = Math.pow(Math.sin(Math.PI * Math.pow(t, 1.15)), 1.1) * (1 - 0.12 * t) * w * 0.44
-      const wave = Math.sin(t * 34 + side) * w * 0.012 * (1 - t)
-      pts.push([cx + side * (half + wave), h * 0.97 - t * h * 0.94 + r() * 0.6])
+      const body = Math.pow(Math.sin(Math.PI * Math.pow(t, 0.78)), 0.8) * (1 - 0.38 * Math.pow(t, 3))
+      const wave = Math.sin(t * 26 + side * 1.3) * 0.012 * (1 - t) * (0.5 + r() * 0.5)
+      const half = (body * 0.45 + wave) * w * lop
+      pts.push([cx + side * half, h * 0.975 - t * h * 0.955])
     }
   }
   ctx.beginPath()
@@ -31,115 +33,112 @@ function leafletPath(ctx: CanvasRenderingContext2D, w: number, h: number, r: () 
 }
 
 // Colour + alpha and a matching bump map for one potato leaflet (tip at the top).
+// Potato leaves are a deep, matte green with sunken veins (darker grooves on top),
+// a paler midrib, a puckered surface between the veins, and fine hairs.
 export function createLeafTextures() {
-  const W = 256
-  const H = 512
+  const W = 384
+  const H = 768
   const r = rng(909)
   const [color, cc] = canvas(W, H)
   const [bump, bc] = canvas(W, H)
 
-  // body: deeper at the base, fresher toward the tip, with a soft sheen
   leafletPath(cc, W, H, r)
   const g = cc.createLinearGradient(0, H, 0, 0)
-  g.addColorStop(0, '#3e6a25')
-  g.addColorStop(0.5, '#5a8d33')
-  g.addColorStop(1, '#4f822e')
+  g.addColorStop(0, '#35602a')
+  g.addColorStop(0.45, '#4a7d31')
+  g.addColorStop(1, '#578a38')
   cc.fillStyle = g
   cc.fill()
   cc.save()
   cc.clip()
-  const sheen = cc.createRadialGradient(W * 0.38, H * 0.45, 10, W * 0.38, H * 0.45, W * 0.7)
-  sheen.addColorStop(0, 'rgba(210,235,160,0.22)')
-  sheen.addColorStop(1, 'rgba(210,235,160,0)')
+  // broad soft light across one half, as on a gently domed leaf
+  const sheen = cc.createRadialGradient(W * 0.36, H * 0.48, 20, W * 0.36, H * 0.48, W * 0.75)
+  sheen.addColorStop(0, 'rgba(200,225,150,0.14)')
+  sheen.addColorStop(1, 'rgba(200,225,150,0)')
   cc.fillStyle = sheen
   cc.fillRect(0, 0, W, H)
-  // fine mottling
-  for (let i = 0; i < 2600; i++) {
-    cc.fillStyle = r() < 0.5 ? 'rgba(20,45,10,0.06)' : 'rgba(190,220,140,0.05)'
-    cc.fillRect(r() * W, r() * H, 2 + r() * 3, 2 + r() * 3)
+  // puckered cells between the veins: soft light/dark blotches
+  for (let i = 0; i < 1600; i++) {
+    const x = r() * W
+    const y = r() * H
+    const rad = 3 + r() * 8
+    const gr = cc.createRadialGradient(x, y, 0, x, y, rad)
+    const light = r() < 0.5
+    gr.addColorStop(0, light ? 'rgba(170,205,120,0.10)' : 'rgba(15,35,8,0.10)')
+    gr.addColorStop(1, 'rgba(0,0,0,0)')
+    cc.fillStyle = gr
+    cc.fillRect(x - rad, y - rad, rad * 2, rad * 2)
   }
-  // margins slightly darker
-  cc.lineWidth = 10
-  cc.strokeStyle = 'rgba(25,55,15,0.25)'
+  // fine hairs catching light
+  for (let i = 0; i < 1400; i++) {
+    cc.fillStyle = 'rgba(220,235,200,0.10)'
+    cc.fillRect(r() * W, r() * H, 1, 1 + r() * 2)
+  }
+  // margins a touch darker and yellower
+  cc.lineWidth = 9
+  cc.strokeStyle = 'rgba(40,55,15,0.28)'
   leafletPath(cc, W, H, r)
   cc.stroke()
 
-  // bump base: mid grey with puckered blotches between the veins
-  bc.fillStyle = '#7a7a7a'
+  // bump base: puckered blotches
+  bc.fillStyle = '#808080'
   bc.fillRect(0, 0, W, H)
-  for (let i = 0; i < 900; i++) {
-    const v = 100 + Math.floor(r() * 60)
-    bc.fillStyle = `rgba(${v},${v},${v},0.35)`
-    bc.beginPath()
-    bc.arc(r() * W, r() * H, 3 + r() * 9, 0, Math.PI * 2)
-    bc.fill()
+  for (let i = 0; i < 1400; i++) {
+    const v = 120 + Math.floor(r() * 70)
+    const x = r() * W
+    const y = r() * H
+    const rad = 4 + r() * 10
+    const gr = bc.createRadialGradient(x, y, 0, x, y, rad)
+    gr.addColorStop(0, `rgba(${v},${v},${v},0.5)`)
+    gr.addColorStop(1, 'rgba(128,128,128,0)')
+    bc.fillStyle = gr
+    bc.fillRect(x - rad, y - rad, rad * 2, rad * 2)
   }
 
-  // veins: pale midrib, then curved pinnate veins reaching for the margin
-  const vein = (ctx: CanvasRenderingContext2D, colorStr: string, scale: number) => {
-    ctx.strokeStyle = colorStr
+  // veins: midrib, curved laterals that loop toward the margin, faint netting between
+  const veins = (ctx: CanvasRenderingContext2D, mid: string, lat: string, net: string, k: number) => {
     ctx.lineCap = 'round'
-    ctx.lineWidth = 6 * scale
+    ctx.strokeStyle = mid
+    ctx.lineWidth = 6 * k
     ctx.beginPath()
     ctx.moveTo(W / 2, H * 0.98)
-    ctx.quadraticCurveTo(W / 2 + 3, H * 0.5, W / 2, H * 0.05)
+    ctx.quadraticCurveTo(W / 2 + 4, H * 0.5, W / 2, H * 0.03)
     ctx.stroke()
-    for (let k = 0; k < 8; k++) {
-      const y = H * (0.86 - k * 0.095)
+    ctx.strokeStyle = lat
+    for (let n = 0; n < 9; n++) {
+      const y = H * (0.88 - n * 0.088)
+      const reach = Math.sin(Math.PI * Math.min(0.98, 0.12 + n * 0.1)) * 0.34 + 0.06
       for (const side of [-1, 1]) {
-        ctx.lineWidth = (3 - k * 0.22) * scale
+        ctx.lineWidth = (3.2 - n * 0.24) * k
         ctx.beginPath()
         ctx.moveTo(W / 2, y)
-        ctx.quadraticCurveTo(W / 2 + side * W * 0.18, y - H * 0.05, W / 2 + side * W * 0.36, y - H * 0.12)
+        ctx.bezierCurveTo(
+          W / 2 + side * W * reach * 0.4, y - H * 0.02,
+          W / 2 + side * W * reach * 0.9, y - H * 0.06,
+          W / 2 + side * W * reach, y - H * 0.12,
+        )
         ctx.stroke()
       }
     }
+    ctx.strokeStyle = net
+    ctx.lineWidth = 1 * k
+    for (let n = 0; n < 220; n++) {
+      const x = r() * W
+      const y = r() * H
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + (r() - 0.5) * 18, y + (r() - 0.5) * 18)
+      ctx.stroke()
+    }
   }
-  vein(cc, 'rgba(176,206,120,0.7)', 1)
-  vein(bc, '#d8d8d8', 1.4)
+  // on the upper surface the veins are sunken: dark grooves, with a paler midrib
+  veins(cc, 'rgba(175,205,120,0.65)', 'rgba(18,40,10,0.4)', 'rgba(18,40,10,0.12)', 1)
+  veins(bc, '#4a4a4a', '#5a5a5a', '#707070', 1.3)
   cc.restore()
 
   const map = new THREE.CanvasTexture(color)
   map.colorSpace = THREE.SRGBColorSpace
-  map.anisotropy = 4
+  map.anisotropy = 8
   const bumpMap = new THREE.CanvasTexture(bump)
   return { map, bumpMap }
-}
-
-// A clump of small leaves on transparent ground, for building tree canopies from cards.
-export function createFoliageTexture() {
-  const S = 512
-  const r = rng(2718)
-  const [c, ctx] = canvas(S, S)
-  const greens = ['#2f5420', '#3b6627', '#4a7a30', '#5b8d39', '#6c9c44', '#7fae52']
-  // back leaves darker, front leaves lighter, so each card has depth of its own
-  for (let pass = 0; pass < greens.length; pass++) {
-    for (let i = 0; i < 70; i++) {
-      const a = r() * Math.PI * 2
-      const d = Math.pow(r(), 0.7) * S * 0.42 * (1 - pass * 0.06)
-      const x = S / 2 + Math.cos(a) * d
-      const y = S / 2 + Math.sin(a) * d * 0.9
-      const len = 18 + r() * 22
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.rotate(r() * Math.PI * 2)
-      ctx.fillStyle = greens[pass]
-      ctx.beginPath()
-      ctx.moveTo(0, -len)
-      ctx.quadraticCurveTo(len * 0.5, -len * 0.2, 0, len * 0.4)
-      ctx.quadraticCurveTo(-len * 0.5, -len * 0.2, 0, -len)
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(20,40,12,0.35)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(0, -len * 0.9)
-      ctx.lineTo(0, len * 0.35)
-      ctx.stroke()
-      ctx.restore()
-    }
-  }
-  const tex = new THREE.CanvasTexture(c)
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = 4
-  return tex
 }

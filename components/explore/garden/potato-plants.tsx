@@ -12,24 +12,28 @@ import type { SharedUniforms } from './terrain'
 const PLANT_SHADOW_SLOT = POTATO_SHADOW_SLOT + POTATOES.length
 
 // A single leaflet along +y. The outline, veins and colour come from the painted leaf
-// texture (alpha-cut), the geometry just gives it a real 3D form: folded along the
-// midrib, gently rippled, and curling down toward the tip.
-function leaflet(len: number, wid: number, tint: THREE.Color) {
-  const nu = 8
-  const nv = 12
+// texture (alpha-cut); the geometry gives it a real 3D form: gently domed, margins
+// rolling under, a slight twist along its length and the tip dipping down.
+function leaflet(len: number, wid: number, tint: THREE.Color, twist = 0) {
+  const nu = 10
+  const nv = 14
   const pos: number[] = []
   const col: number[] = []
   const uv: number[] = []
   const idx: number[] = []
   for (let j = 0; j <= nv; j++) {
     const v = j / nv
+    const tw = twist * v
     for (let i = 0; i <= nu; i++) {
       const u = (i / nu) * 2 - 1
-      const x = u * wid
-      const fold = Math.abs(u) * wid * 0.32
-      const ripple = Math.sin(v * 9 + u * 2) * wid * 0.03 * Math.abs(u)
-      const curl = -v * v * len * 0.22
-      pos.push(x, v * len, fold + ripple + curl)
+      const x0 = u * wid
+      // domed across, edges rolled under
+      const z0 = -u * u * wid * 0.22 - Math.pow(Math.abs(u), 4) * wid * 0.18
+      const ripple = Math.sin(v * 11 + u * 3) * wid * 0.02 * Math.abs(u)
+      const dip = -v * v * len * 0.2
+      const x = x0 * Math.cos(tw) - z0 * Math.sin(tw)
+      const z = x0 * Math.sin(tw) + z0 * Math.cos(tw)
+      pos.push(x, v * len, z + ripple + dip)
       col.push(tint.r, tint.g, tint.b)
       uv.push(i / nu, v)
     }
@@ -60,44 +64,51 @@ function stalk(len: number, radius: number) {
   return g
 }
 
-// A pinnate potato leaf of unit length: paired leaflets of rising size, small leaflets
-// tucked between the pairs (as on real potato leaves), and a terminal leaflet, the
-// whole leaf arched downward. Built once and shared by every plant.
+// A pinnate potato leaf of unit length, built like the real thing: four pairs of
+// leaflets on short stalks, slightly staggered rather than perfectly opposite, growing
+// larger toward the tip, tiny leaflets tucked between the pairs, and a big terminal
+// leaflet. The whole leaf arches over. Built once and shared by every plant.
 function compoundLeaf(seed: number) {
   const r = rng(seed)
-  // tints multiply the painted texture, so they stay near white
-  const tints = ['#ffffff', '#eef7e2', '#f7fff0', '#e4f0d4']
+  // tints multiply the painted texture: fresh, deep and slightly bluish greens
+  const tints = ['#ffffff', '#eef6e0', '#f4fbe9', '#dfe9d2', '#e9f2ef', '#f7f3dc']
   const tint = () => new THREE.Color(tints[Math.floor(r() * tints.length)])
-  const parts: THREE.BufferGeometry[] = [stalk(0.78, 0.012)]
-  const pairs = 3
+  const parts: THREE.BufferGeometry[] = [stalk(0.82, 0.011)]
+  const pairs = 4
   for (let i = 0; i < pairs; i++) {
-    const at = 0.18 + (i / pairs) * 0.5
-    const len = 0.2 + i * 0.05 + r() * 0.03
+    const at = 0.14 + (i / pairs) * 0.56
+    const len = 0.13 + i * 0.04 + r() * 0.025
     for (const side of [-1, 1]) {
-      const g = leaflet(len, len * 0.5, tint())
-      g.rotateY(side * 0.25)
-      g.rotateZ(-side * (1.05 - i * 0.12 + r() * 0.15))
-      g.translate(0, at, 0)
+      const stagger = side * (r() * 0.03)
+      const g = leaflet(len, len * 0.48, tint(), (r() - 0.5) * 0.5)
+      // a short stalk (petiolule) before the blade
+      g.translate(0, 0.02, 0)
+      g.rotateY(side * (0.2 + r() * 0.25))
+      // leaflets stand out nearly square to the stalk, so the pairs read separately
+      g.rotateZ(-side * (1.32 - i * 0.12 + (r() - 0.5) * 0.2))
+      g.translate(0, at + stagger, 0)
       parts.push(g)
-      // a tiny leaflet between this pair and the next
+      // tiny interstitial leaflets between this pair and the next
       if (i < pairs - 1) {
-        const small = leaflet(len * 0.38, len * 0.2, tint())
-        small.rotateZ(-side * 1.3)
-        small.translate(0, at + 0.09, 0)
+        const tiny = len * (0.26 + r() * 0.12)
+        const small = leaflet(tiny, tiny * 0.5, tint(), (r() - 0.5) * 0.6)
+        small.rotateZ(-side * (1.45 + r() * 0.25))
+        small.translate(0, at + 0.07 + r() * 0.02, 0)
         parts.push(small)
       }
     }
   }
-  const tip = leaflet(0.3, 0.15, tint())
-  tip.translate(0, 0.76, 0)
+  const tip = leaflet(0.3, 0.155, tint(), (r() - 0.5) * 0.3)
+  tip.translate(0, 0.74, 0)
   parts.push(tip)
   const merged = mergeGeometries(parts)!
   parts.forEach((p) => p.dispose())
-  // arch the whole leaf so it droops like a real one
+  // arch the whole leaf over so the outer half droops
   const p = merged.getAttribute('position') as THREE.BufferAttribute
   for (let i = 0; i < p.count; i++) {
     const y = p.getY(i)
-    p.setZ(i, p.getZ(i) - y * y * 0.32)
+    p.setZ(i, p.getZ(i) - y * y * 0.42)
+    p.setY(i, y - y * y * y * 0.08)
   }
   merged.computeVertexNormals()
   return merged
@@ -151,26 +162,30 @@ type PlantSpec = { curve: THREE.CatmullRomCurve3; leaves: LeafSpec[]; height: nu
 
 function plantSpec(seed: number, height: number, leafCount: number, outward?: THREE.Vector2): PlantSpec {
   const r = rng(seed)
-  const lean = new THREE.Vector3((r() - 0.5) * 0.25, 0, (r() - 0.5) * 0.25)
+  const lean = new THREE.Vector3((r() - 0.5) * 0.2, 0, (r() - 0.5) * 0.2)
   // stems in a clump splay away from its centre
   if (outward) lean.add(new THREE.Vector3(outward.x, 0, outward.y))
-  const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(lean.x * 0.3, height * 0.35, lean.z * 0.3),
-    new THREE.Vector3(lean.x * 0.8, height * 0.7, lean.z * 0.8),
-    new THREE.Vector3(lean.x, height, lean.z),
-  ])
+  // a gentle zigzag at the nodes, as on real potato stems
+  const pts = [new THREE.Vector3(0, 0, 0)]
+  for (let k = 1; k <= 5; k++) {
+    const t = k / 5
+    const zig = (k % 2 ? 1 : -1) * 0.025 * height
+    pts.push(new THREE.Vector3(lean.x * t * t + zig, height * t, lean.z * t * t - zig * 0.5))
+  }
+  const curve = new THREE.CatmullRomCurve3(pts)
   const leaves: LeafSpec[] = []
-  const golden = 2.39996
+  // potato leaves spiral up the stem roughly 2/5 of a turn apart
+  const turn = Math.PI * 2 * 0.4
   const yaw0 = r() * Math.PI * 2
   for (let k = 0; k < leafCount; k++) {
-    const at = 0.28 + (k / Math.max(1, leafCount - 1)) * 0.72
+    const at = 0.18 + (k / Math.max(1, leafCount - 1)) * 0.8
     leaves.push({
       at,
-      yaw: yaw0 + k * golden,
-      pitch: 1.45 - at * 0.5 + (r() - 0.5) * 0.25,
-      scale: height * (0.75 - at * 0.25) * (0.9 + r() * 0.2),
-      template: Math.floor(r() * 3),
+      yaw: yaw0 + k * turn + (r() - 0.5) * 0.4,
+      // lower leaves stand out wider; the young ones near the top point up
+      pitch: 1.4 - at * 0.5 + (r() - 0.5) * 0.2,
+      scale: height * (1.0 - at * 0.38) * (0.85 + r() * 0.3),
+      template: Math.floor(r() * 4),
     })
   }
   return { curve, leaves, height }
@@ -224,7 +239,7 @@ function Plant({
   blossomMaterial?: THREE.Material
   setRef: (g: THREE.Group | null) => void
 }) {
-  const stemGeo = useMemo(() => new THREE.TubeGeometry(spec.curve, 16, 0.011 * Math.max(1, spec.height), 6), [spec])
+  const stemGeo = useMemo(() => new THREE.TubeGeometry(spec.curve, 24, 0.009 * Math.max(1, spec.height), 6), [spec])
   useEffect(() => () => stemGeo.dispose(), [stemGeo])
   return (
     <group ref={setRef}>
@@ -250,7 +265,7 @@ export function PotatoPlants({
   uniforms: SharedUniforms
   mobile: boolean
 }) {
-  const templates = useMemo(() => [11, 23, 37].map(compoundLeaf), [])
+  const templates = useMemo(() => [11, 23, 37, 53].map(compoundLeaf), [])
   const blossom = useMemo(() => blossomCluster(), [])
   const leafTextures = useMemo(() => createLeafTextures(), [])
   const material = useMemo(
@@ -259,11 +274,13 @@ export function PotatoPlants({
         vertexColors: true,
         map: leafTextures.map,
         bumpMap: leafTextures.bumpMap,
-        bumpScale: 1.5,
+        bumpScale: 2,
         alphaTest: 0.5,
         side: THREE.DoubleSide,
-        roughness: 0.72,
+        roughness: 0.82,
         metalness: 0,
+        // a touch of light passing through the leaves
+        emissive: new THREE.Color('#14260a'),
       }),
     [leafTextures],
   )
@@ -271,7 +288,7 @@ export function PotatoPlants({
     () => new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.6 }),
     [],
   )
-  const stemMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: '#476f2a', roughness: 0.7 }), [])
+  const stemMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a6b2b', roughness: 0.8 }), [])
   useEffect(
     () => () => {
       templates.forEach((t) => t.dispose())
@@ -297,16 +314,29 @@ export function PotatoPlants({
           potato: pi,
           plant: k,
           offset: dir.clone().multiplyScalar(0.06),
-          spec: plantSpec(500 + k * 7 + j, (0.55 + (k % 3) * 0.12) * (j === 0 ? 1.1 : 0.85), j === 0 ? 6 : 5, dir.multiplyScalar(0.22)),
+          spec: plantSpec(500 + k * 7 + j, (0.55 + (k % 3) * 0.12) * (j === 0 ? 1.1 : 0.85), j === 0 ? 9 : 7, dir.multiplyScalar(0.22)),
           visible: mobile ? POTATOES[pi].mobile : true,
         }
       }),
     )
   }, [mobile])
-  const framers = useMemo(
-    () => FRAMERS.filter((_, i) => !mobile || i < 4).map((f, i) => ({ ...f, spec: plantSpec(900 + i, 1, 9) })),
-    [mobile],
-  )
+  // The big plants that frame the finale are whole bushes: several stems from one
+  // base, splaying outward, each with its own spiral of leaves.
+  const framers = useMemo(() => {
+    const stems = mobile ? 3 : 5
+    return FRAMERS.filter((_, i) => !mobile || i < 4).flatMap((f, i) =>
+      Array.from({ length: stems }, (_, j) => {
+        const a = (j / stems) * Math.PI * 2 + i * 1.7
+        const dir = new THREE.Vector2(Math.cos(a), Math.sin(a))
+        return {
+          ...f,
+          bush: i,
+          offset: dir.clone().multiplyScalar(0.05),
+          spec: plantSpec(900 + i * 11 + j, j === 0 ? 0.85 : 0.6 + (j % 3) * 0.08, j === 0 ? 11 : 8, dir.multiplyScalar(0.3)),
+        }
+      }),
+    )
+  }, [mobile])
 
   const sproutRefs = useRef<(THREE.Group | null)[]>([])
   const framerRefs = useRef<(THREE.Group | null)[]>([])
@@ -331,15 +361,17 @@ export function PotatoPlants({
     framers.forEach((f, i) => {
       const group = framerRefs.current[i]
       if (!group) return
-      const g = smooth(i * 0.08, 0.6 + i * 0.08, state.frame)
+      const g = smooth(f.bush * 0.08, 0.6 + f.bush * 0.08, state.frame)
       group.visible = g > 0.001
       const z = layout.zNear - f.depth
       const half = layout.halfWidth(z)
       const side = Math.sign(f.u) || 1
       const x = f.u * half + side * state.part * half * 1.3
-      group.position.set(x, terrainHeight(x, z) - 0.05 - state.part * 0.3, z)
+      const bx = x + f.offset.x * f.scale
+      const bz = z + f.offset.y * f.scale
+      group.position.set(bx, terrainHeight(bx, bz) - 0.05 - state.part * 0.3, bz)
       group.rotation.set(0, f.yaw, side * state.part * 0.35)
-      group.scale.setScalar(f.scale)
+      group.scale.setScalar(f.scale * 0.8)
       applyGrowth(group, f.spec, g, tmp)
     })
   })

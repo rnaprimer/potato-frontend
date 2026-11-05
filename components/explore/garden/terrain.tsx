@@ -43,8 +43,9 @@ export function createSharedUniforms(noise: THREE.Texture) {
     uHaze: { value: new THREE.Color('#c9d8dc') },
     // grass thins out between these camera distances
     uFade: { value: new THREE.Vector2(16, 34) },
-    // the far landscape dissolves into the sky between these distances
-    uFar: { value: new THREE.Vector2(205, 250) },
+    // GROUND FADE: the land dissolves into the sky between these camera distances
+    // (the ground mesh ends ~75 units out, so keep the second number below that)
+    uFar: { value: new THREE.Vector2(36, 62) },
     uShadows: {
       value: Array.from({ length: MAX_SHADOWS }, (_, i) => WOMAN_CONTACTS[i]?.clone() ?? new THREE.Vector4(0, 0, 1, 0)),
     },
@@ -162,7 +163,7 @@ void main() {
   vec2 p = vWorld.xz;
   float dist = length(vWorld - cameraPosition);
 
-  // fine detail fades with distance so far hills stay clean
+  // fine detail fades with distance so the far ground stays clean
   float detail = 1.0 - smoothstep(8.0, 30.0, dist);
   vec3 n0 = normalize(vNormal);
   float slope = 1.0 - n0.y;
@@ -205,34 +206,8 @@ void main() {
 }
 `
 
-// A grid whose spacing grows away from its dense edge/centre, for distant land.
-function farGrid(halfX: number, zStart: number, zEnd: number, nx: number, nz: number) {
-  const pos: number[] = []
-  const idx: number[] = []
-  for (let j = 0; j <= nz; j++) {
-    const z = zStart + (zEnd - zStart) * Math.pow(j / nz, 1.6)
-    for (let i = 0; i <= nx; i++) {
-      const u = (i / nx) * 2 - 1
-      pos.push(Math.sign(u) * Math.pow(Math.abs(u), 1.8) * halfX, 0, z)
-    }
-  }
-  for (let j = 0; j < nz; j++) {
-    for (let i = 0; i < nx; i++) {
-      const a = j * (nx + 1) + i
-      const b = a + nx + 1
-      // counter-clockwise seen from above, so the faces point up
-      idx.push(a, a + 1, b, a + 1, b + 1, b)
-    }
-  }
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setIndex(idx)
-  return g
-}
-
-// Sculpted ground in two pieces: a finely subdivided near field holding the mound and
-// the fields around it, and a coarser far field for the rolling hills and ridges.
-// Both share one height function, so they meet seamlessly.
+// The sculpted ground: one finely subdivided field holding the mound and the fields
+// around it. Its far edge dissolves into the sky (uFar), so there is no horizon line.
 export function Terrain({ uniforms, mobile }: { uniforms: SharedUniforms; mobile: boolean }) {
   const near = useMemo(() => {
     const seg = mobile ? 220 : 320
@@ -241,7 +216,6 @@ export function Terrain({ uniforms, mobile }: { uniforms: SharedUniforms; mobile
     g.translate(0, 0, -20)
     return g
   }, [mobile])
-  const far = useMemo(() => farGrid(420, -63, -260, mobile ? 140 : 220, mobile ? 70 : 110), [mobile])
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -253,28 +227,12 @@ export function Terrain({ uniforms, mobile }: { uniforms: SharedUniforms; mobile
       }),
     [uniforms],
   )
-  // pushed back a hair so the overlap strip with the near field never flickers
-  const farMaterial = useMemo(() => {
-    const m = material.clone()
-    m.uniforms = uniforms
-    m.polygonOffset = true
-    m.polygonOffsetFactor = 2
-    m.polygonOffsetUnits = 2
-    return m
-  }, [material, uniforms])
   useEffect(
     () => () => {
       near.dispose()
-      far.dispose()
       material.dispose()
-      farMaterial.dispose()
     },
-    [near, far, material, farMaterial],
+    [near, material],
   )
-  return (
-    <>
-      <mesh geometry={near} material={material} renderOrder={-1} frustumCulled={false} />
-      <mesh geometry={far} material={farMaterial} renderOrder={-2} frustumCulled={false} />
-    </>
-  )
+  return <mesh geometry={near} material={material} renderOrder={-1} frustumCulled={false} />
 }

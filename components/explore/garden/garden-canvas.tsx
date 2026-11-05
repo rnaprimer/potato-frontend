@@ -8,7 +8,6 @@ import { createNoiseTexture } from './noise'
 import { Terrain, createSharedUniforms, type SharedUniforms } from './terrain'
 import { GrassField, WildFlowers } from './grass-field'
 import { Rocks } from './rocks'
-import { Backdrop } from './background'
 import { FallingPotatoes3D } from './potatoes'
 import { PotatoPlants } from './potato-plants'
 
@@ -157,7 +156,6 @@ function Scene({ state, root, mobile, still, onReady }: Props) {
     <>
       <hemisphereLight ref={hemi} args={['#e3f0ff', '#6b5236', 1.4]} />
       <directionalLight ref={sun} position={[-4, 7, 5]} intensity={1.9} color="#fff1d6" />
-      <Backdrop uniforms={uniforms} layout={layout} state={state} mobile={mobile} />
       <Terrain uniforms={uniforms} mobile={mobile} />
       <Woman layout={layout} state={state} onLoaded={onWomanLoaded} />
       <Rocks uniforms={uniforms} layout={layout} mobile={mobile} />
