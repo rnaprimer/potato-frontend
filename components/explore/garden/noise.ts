@@ -65,9 +65,9 @@ export const TERRAIN = {
     z: -0.5,
     radiusX: 1.25, // stretch across the screen
     radiusZ: 1.0, // stretch in depth
-    height: 0.9, // how far the top rises above the surrounding land
+    height: 1.25, // how far the top rises above the surrounding land
     plateau: 1.3, // flat top (in scaled radii) so she sits level
-    foot: 4.6, // where the slope meets the land
+    foot: 5.0, // where the slope meets the land
     lumps: 0.35, // soft bumps on its flanks
   },
   // A soft swell of earth right under her seat, so the ground visibly meets her
@@ -80,7 +80,11 @@ export const TERRAIN = {
   rolling: { amount: 4.0, scale: 0.07, from: 9, to: 35 },
   // Land rising on both sides, like a valley she sits in.
   sides: { amount: 2.6, from: 10, to: 60 },
-  // Ranges on the horizon.
+  // The cliff: the land ends a few steps behind her and drops away, so she sits on the
+  // edge with open sky beyond. `z` is where the rim is directly behind her; `curve`
+  // bends the rim forward at the sides into a promontory; `drop` is how far it falls.
+  cliff: { z: -5.2, curve: 0.025, wobble: 0.35, depth: 2.5, drop: 45 },
+  // Ranges on the horizon (hidden below the cliff).
   ridges: { amount: 16, scale: 0.02, from: 70, to: 170 },
 }
 
@@ -99,9 +103,14 @@ export function terrainHeight(x: number, z: number) {
   const sx = (x - T.seat.x) / T.seat.radiusX
   const sz = (z - T.seat.z) / T.seat.radiusZ
   h += T.seat.height * Math.exp(-(sx * sx + sz * sz) * 2)
-  h += (fbmSmooth(x * T.rolling.scale + 50, z * T.rolling.scale + 50) - 0.45) * T.rolling.amount * smoothstep(T.rolling.from, T.rolling.to, d)
+  // distant land is mirrored left/right (a softened |x|, so there's no crease behind her)
+  const mx = Math.sqrt(x * x + 4)
+  h += (fbmSmooth(mx * T.rolling.scale + 50, z * T.rolling.scale + 50) - 0.45) * T.rolling.amount * smoothstep(T.rolling.from, T.rolling.to, d)
   h += Math.pow(smoothstep(T.sides.from, T.sides.to, Math.abs(x)), 1.5) * T.sides.amount
-  h += smoothstep(T.ridges.from, T.ridges.to, -z) * (fbmSmooth(x * T.ridges.scale + 9, z * T.ridges.scale + 9) * T.ridges.amount - 4)
+  h += smoothstep(T.ridges.from, T.ridges.to, -z) * (fbmSmooth(mx * T.ridges.scale + 9, z * T.ridges.scale + 9) * T.ridges.amount - 4)
+  const c = T.cliff
+  const rim = c.z + c.curve * x * x + (noise(x * 0.6 + 5, 3) - 0.5) * 2 * c.wobble
+  h -= Math.pow(smoothstep(rim, rim - c.depth, z), 1.6) * c.drop
   return h
 }
 
@@ -126,9 +135,12 @@ float terrainHeight(vec2 p) {
   h += ((fbm(p * 0.9) - 0.5) * ${n(T.detail)} + (vnoise(p * 4.0) - 0.5) * 0.03) * smoothstep(0.9, 2.0, r) * near;
   vec2 sp = (p - vec2(${n(T.seat.x)}, ${n(T.seat.z)})) / vec2(${n(T.seat.radiusX)}, ${n(T.seat.radiusZ)});
   h += ${n(T.seat.height)} * exp(-dot(sp, sp) * 2.0);
-  h += (fbmSmooth(p * ${n(T.rolling.scale)} + 50.0) - 0.45) * ${n(T.rolling.amount)} * smoothstep(${n(T.rolling.from)}, ${n(T.rolling.to)}, d);
+  vec2 mp = vec2(sqrt(p.x * p.x + 4.0), p.y);
+  h += (fbmSmooth(mp * ${n(T.rolling.scale)} + 50.0) - 0.45) * ${n(T.rolling.amount)} * smoothstep(${n(T.rolling.from)}, ${n(T.rolling.to)}, d);
   h += pow(smoothstep(${n(T.sides.from)}, ${n(T.sides.to)}, abs(p.x)), 1.5) * ${n(T.sides.amount)};
-  h += smoothstep(${n(T.ridges.from)}, ${n(T.ridges.to)}, -p.y) * (fbmSmooth(p * ${n(T.ridges.scale)} + 9.0) * ${n(T.ridges.amount)} - 4.0);
+  h += smoothstep(${n(T.ridges.from)}, ${n(T.ridges.to)}, -p.y) * (fbmSmooth(mp * ${n(T.ridges.scale)} + 9.0) * ${n(T.ridges.amount)} - 4.0);
+  float rim = ${n(T.cliff.z)} + ${n(T.cliff.curve)} * p.x * p.x + (vnoise(vec2(p.x * 0.6 + 5.0, 3.0)) - 0.5) * 2.0 * ${n(T.cliff.wobble)};
+  h -= pow(smoothstep(rim, rim - ${n(T.cliff.depth)}, p.y), 1.6) * ${n(T.cliff.drop)};
   return h;
 }
 // Distance from the woman, warped so the green front spreads in organic lobes.

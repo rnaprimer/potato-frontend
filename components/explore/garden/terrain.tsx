@@ -125,14 +125,16 @@ vec3 bumpNormal(vec3 pos, vec3 n, float h, float strength) {
 
 // Dry earth: clods and crumbs, grit stones and darker damp hollows. Returns colour; writes the surface relief into h.
 vec3 soil(vec2 p, float slope, float detail, out float h) {
-  float broad = fbm(p * 0.55);
+  // large colour patches are mirrored left/right, matching the mirrored land shape
+  vec2 pm = vec2(sqrt(p.x * p.x + 4.0), p.y);
+  float broad = fbm(pm * 0.55);
   float clod = fbm(p * 3.1);
   float crumb = vnoise(p * 28.0);
   float grain = vnoise(p * 75.0);
   vec3 c = mix(${glslColor(COLORS.dryEarth)}, ${glslColor(COLORS.dryLight)}, smoothstep(0.35, 0.75, broad));
   c = mix(c, ${glslColor(COLORS.dryDark)}, smoothstep(0.55, 0.85, clod) * 0.55 * detail);
   // damp, richer earth in the low hollows
-  float hollow = smoothstep(0.45, 0.2, fbm(p * 1.3 + 21.0));
+  float hollow = smoothstep(0.45, 0.2, fbm(pm * 1.3 + 21.0));
   c = mix(c, c * vec3(0.72, 0.66, 0.6), hollow * 0.6);
 
   // small stones and grit pressed into the surface
@@ -150,7 +152,7 @@ vec3 soil(vec2 p, float slope, float detail, out float h) {
 }
 
 vec3 turf(vec2 p, float slope, out float h) {
-  float broad = fbm(p * 0.7 + 9.0);
+  float broad = fbm(vec2(sqrt(p.x * p.x + 4.0), p.y) * 0.7 + 9.0);
   float fine = vnoise(p * 18.0);
   float blade = vnoise(p * vec2(90.0, 40.0));
   vec3 c = mix(${glslColor(COLORS.turfYoung)}, ${glslColor(COLORS.turfDeep)}, smoothstep(0.3, 0.8, broad) * (0.45 + 0.55 * uLush));
