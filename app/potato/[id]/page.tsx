@@ -64,7 +64,7 @@ export default function PotatoView() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         >
           <Image 
-            src="/potato.png" 
+            src="/potato.webp" 
             width={600} 
             height={848} 
             alt="potato" 

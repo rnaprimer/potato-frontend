@@ -9,7 +9,7 @@ export default function FloatingPotato() {
       {/* Potato */}
       <div className="relative animate-bounce-potato">
         <Image
-          src="/potato.png"
+          src="/potato.webp"
           alt="Just a potato"
           width={200}
           height={200}

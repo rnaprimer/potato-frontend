@@ -30,7 +30,7 @@ export default function Home() {
         <div className="absolute top-[100px] left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[520px]">
           <div className="animate-bounce-potato">
             <Image
-              src="/potato.png"
+              src="/potato.webp"
               width={1000}
               height={1414}
               alt="potato"
@@ -65,7 +65,7 @@ export default function Home() {
         <div className="relative w-full max-w-[260px] mt-[-70px] z-15 flex flex-col items-center">
           <div className="w-full relative z-24 pointer-events-none animate-bounce-potato">
             <Image
-              src="/potato.png"
+              src="/potato.webp"
               width={600}
               height={848}
               alt="potato"

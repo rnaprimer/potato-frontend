@@ -1,5 +1,5 @@
 import { gsap } from 'gsap'
-import type { GardenState } from './garden-state'
+import type { GardenState } from './garden-store'
 
 /*
  * SCROLL TIMING: tweak here. The pinned hero runs one timeline from 0 to 100 over

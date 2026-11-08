@@ -6,7 +6,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import { HeroScene, addHeroScene } from './hero-scene'
-import { createGardenState } from './garden/garden-state'
+import { createGardenState } from './garden/garden-store'
 import { addGarden } from './garden/garden-timeline'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
