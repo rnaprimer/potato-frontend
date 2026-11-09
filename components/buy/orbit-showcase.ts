@@ -7,9 +7,10 @@
 
 export class PotatoBaeOrbitShowcase {
   [key: string]: any
-  constructor(canvas: HTMLCanvasElement, options: { orbitDurationMs?: number } = {}) {
+  constructor(canvas: HTMLCanvasElement, options: { orbitDurationMs?: number; onReady?: () => void } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
+    this.onReady = options.onReady;
 
     // Logical coordinate space matching calibrated 1000x1000 studio frame
     this.logicalSize = 1000;
@@ -364,6 +365,7 @@ export class PotatoBaeOrbitShowcase {
       this.assetsReady = true;
 
       this.renderFrame(this.phaseU);
+      this.onReady?.();
       if (!this.isPaused) {
         this.startLoop();
       }
@@ -385,6 +387,10 @@ export class PotatoBaeOrbitShowcase {
         this.canvas.height = targetPx;
         if (this.assetsReady) {
           this.renderFrame(this.phaseU);
+        } else {
+          // An opaque canvas starts black; keep it white until the pouches are ready.
+          this.ctx.fillStyle = '#FFFFFF';
+          this.ctx.fillRect(0, 0, targetPx, targetPx);
         }
       }
     };
